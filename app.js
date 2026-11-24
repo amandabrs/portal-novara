@@ -15,6 +15,7 @@ const views = {
   profile: { hash: '#meu-perfil', title: 'Meu perfil' },
   settings: { hash: '#preferencias', title: 'Preferências' },
 };
+// Cada propriedade guarda um filtro atual; string vazia significa nenhum filtro selecionado.
 const filters = { query: '', status: '', priority: '', category: '' };
 const shortDate = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' });
 const replyDate = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
@@ -37,6 +38,7 @@ const icon = (name, className = '') => `<span class="icon ${className}" aria-hid
 const initials = name => name.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
 const avatar = (name, photo) => `<span class="avatar" aria-hidden="true">${photo ? `<img src="${esc(photo)}" alt="">` : esc(initials(name))}</span>`;
 const displayPerson = person => ({ ...person, ...workspace.personalProfiles?.[person.id] });
+// find() seleciona a conta atual na lista de pessoas, usando o identificador da sessão.
 const account = () => peopleFor(workspace).find(person => person.id === currentPersonId);
 const user = () => displayPerson(account());
 // Visibilidade: técnico/admin consultam todos; colaborador vê seus chamados (simulação local).
@@ -62,6 +64,7 @@ function readSession() {
   try { return sessionStorage.getItem(sessionKey); } catch { return null; }
 }
 
+// sessionStorage persiste a seleção do perfil enquanto a aba está ativa; não é login seguro.
 function setSession(id) {
   currentPersonId = id;
   try {
@@ -72,6 +75,7 @@ function setSession(id) {
   }
 }
 
+// Ao sair, limpa a sessão e filtros e remove os componentes exibidos no painel.
 function endSession() {
   setSession(null);
   Object.assign(filters, { query: '', status: '', priority: '', category: '' });
@@ -80,6 +84,7 @@ function endSession() {
 
 // Armazenamento: JSON.stringify converte workspace para texto; localStorage.setItem salva.
 function save() {
+  // O objeto workspace vira uma string JSON para caber no armazenamento do navegador.
   try {
     localStorage.setItem(storageKey, JSON.stringify(workspace));
     return true;
@@ -126,6 +131,7 @@ function panelHeading(title, caption, control = '') {
 
 // Gráfico de atividade: calcula aberturas e resoluções por dia.
 function activity(tickets) {
+  // Os dados de cada dia são calculados por ticketActivity(), definida no data.js.
   const days = ticketActivity(tickets, period);
   const max = Math.max(4, Math.ceil(Math.max(...days.flatMap(day => [day.opened, day.resolved])) / 4) * 4);
   const ticks = [max, max * .75, max * .5, max * .25, 0];
@@ -159,6 +165,7 @@ function activity(tickets) {
 function distribution(tickets) {
   const entries = statuses.map(status => ({ ...status, value: countBy(tickets, 'status', status.name) }));
   let end = 0;
+  // map() transforma as quantidades em fatias percentuais para o gradiente circular CSS.
   const gradient = entries.map(entry => {
     const start = end;
     end += (entry.value / (tickets.length || 1)) * 100;
@@ -184,6 +191,7 @@ function pill(label, className) {
 // Tabela: transforma os objetos do array em linhas de HTML.
 function ticketTable(tickets) {
   if (!tickets.length) return '<p class="empty">Nenhum chamado encontrado.</p>';
+  // tabindex permite foco na tabela com o teclado; esc() protege textos digitados contra HTML acidental.
   return `<div class="table-wrap" tabindex="0" role="region" aria-label="Lista de chamados"><table>
     <thead><tr><th scope="col">ID</th><th scope="col">Chamado</th><th scope="col">Solicitante</th><th scope="col">Prioridade</th><th scope="col">Status</th><th scope="col">Abertura</th></tr></thead>
     <tbody>${tickets.map(ticket => `<tr>
@@ -217,6 +225,7 @@ function dashboard(tickets) {
   </section>`;
 }
 
+// Tela de consulta: combina abas de status, campo de pesquisa, seletores e a tabela gerada.
 function ticketPage() {
   return `${pageTitle('Chamados', 'Consulte e acompanhe as solicitações de TI.', newButton())}
   <section class="panel" aria-label="Pesquisa e lista de chamados">
@@ -255,6 +264,7 @@ function reports(tickets) {
     <div class="chart-grid">${breakdown('Por categoria', 'category', categories)}${breakdown('Por prioridade', 'priority', priorities)}</div>`;
 }
 
+// Página da equipe: lista pessoas/convites; só o perfil admin recebe o botão de convidar.
 function team() {
   const admin = user().id === 'admin';
   const action = admin ? `<button class="button primary" type="button" data-action="invite">${icon('add')}Convidar</button>` : '';
@@ -282,6 +292,7 @@ function team() {
     </section>` : ''}`;
 }
 
+// Página de perfil: apresenta campos para nome, contato e foto da conta demonstrativa.
 function profile() {
   const person = user();
   return `${pageTitle('Meu perfil', 'Edite sua foto e seus dados de contato.')}
@@ -353,6 +364,7 @@ async function saveProfile(event) {
   }
 }
 
+// Acessibilidade: gera seletores de tema e tamanho de fonte no painel.
 function settings() {
   const size = workspace.fontSize ?? '100';
   return `${pageTitle('Preferências e acessibilidade', 'Ajuste a aparência e o tamanho do texto.')}
@@ -390,6 +402,7 @@ function render() {
   if (view === 'tickets') renderTicketResults();
 }
 
+// Menu responsivo: mostra/oculta a barra lateral em telas menores e gerencia o foco.
 function setMenu(open, focus = true) {
   $('#sidebar').classList.toggle('is-open', open);
   $('#sidebar-scrim').hidden = !open;
@@ -399,6 +412,7 @@ function setMenu(open, focus = true) {
   if (!open && focus) $('#menu-toggle').focus();
 }
 
+// Troca a seção interna e atualiza a URL, deixando histórico navegável com #fragmentos.
 function goTo(next) {
   if (dialog.open) dialog.close();
   view = next;
@@ -418,12 +432,15 @@ function setTheme(theme) {
   if (!persisted) notify('O tema vale apenas nesta aba.');
 }
 
+// Aplica tema e escala da fonte ao HTML; as variáveis CSS fazem o restante.
 function applyAppearance() {
   document.documentElement.dataset.theme = workspace.theme;
   const size = workspace.fontSize ?? '100';
   document.documentElement.style.fontSize = ['100', '112', '125', '150'].includes(size) ? size + '%' : '';
 }
 
+// Janela reutilizável: monta o formulário e conecta seu submit à função recebida.
+// Usa <dialog> nativo para mostrar a caixa de forma modal.
 function showDialog(title, body, { submitLabel, onSubmit } = {}) {
   if (dialog.open) dialog.close();
   dialog.innerHTML = `<form>
@@ -462,11 +479,13 @@ function newTicket() {
       if (title.length < 3 || description.length < 10) {
         return 'Use pelo menos 3 caracteres no título e 10 na descrição.';
       }
+      // nextId++ usa o ID atual e incrementa para o próximo; o chamado começa como Aberto.
       const ticket = {
         id: workspace.nextId++, title, description, category: data.get('category'),
         priority: data.get('priority'), status: 'Aberto', requester: user().name,
         owner: user().id, created: Date.now(), resolved: null,
       };
+      // push() acrescenta o novo chamado ao array do workspace, antes da tentativa de salvamento.
       workspace.tickets.push(ticket);
       Object.assign(filters, { query: '', status: '', priority: '', category: '' });
       goTo('tickets');
@@ -508,9 +527,11 @@ function openTicket(id) {
       const message = data.get('reply').trim();
       if (message.length > 1000) return 'Escreva uma resposta de até 1000 caracteres.';
       const status = data.get('status');
+      // Spread (...) copia o chamado, substitui os campos alterados e registra a resolução, se houver.
       const updated = { ...current, status, priority: data.get('priority'),
         resolved: status === 'Resolvido' ? (current.resolved ?? Date.now()) : null,
       };
+      // Se o técnico escreveu uma resposta, adiciona texto, autor e data ao histórico do chamado.
       if (message) {
         updated.replies = [...(current.replies ?? []), { author: user().name, message, created: Date.now() }];
       }
@@ -528,6 +549,7 @@ function openTicket(id) {
   });
 }
 
+// Salva a lista de convites; em caso de erro, restaura os dados antigos para não perder consistência.
 function saveInvites(invites) {
   const original = workspace.invites;
   workspace.invites = invites;
@@ -564,6 +586,7 @@ function newInvitation() {
   });
 }
 
+// Quando um convite expirou, o admin pode gerar outro token sem criar um funcionário duplicado.
 function renewInvitation(id) {
   if (account()?.id !== 'admin') return;
   const invite = workspace.invites.find(item => item.token === id);
@@ -579,6 +602,7 @@ function renewInvitation(id) {
   notify('Novo link criado. O link anterior foi desativado.');
 }
 
+// Copia o endereço do convite; se a cópia automática falhar, mostra o link para copiar manualmente.
 async function copyInvitation(token) {
   if (account()?.id !== 'admin' || !availableInvite(workspace, token)) return;
   const url = new URL(location.href);
@@ -654,6 +678,7 @@ async function activateAccount(data, form) {
   notify('Cadastro concluído. Entre com a senha que você criou.');
 }
 
+// Alterna da área interna para a área pública e atualiza título, links e conteúdo HTML.
 function showPublic(markup, title) {
   $('#app-shell').hidden = true;
   $('#public-shell').hidden = false;
@@ -698,6 +723,7 @@ function route() {
   window.scrollTo(0, 0);
 }
 
+// Sair limpa a sessão local e retorna o usuário à tela de login demonstrativo.
 function signOut() {
   endSession();
   loginEmail = '';
@@ -707,6 +733,7 @@ function signOut() {
   notify('Você saiu da conta.');
 }
 
+// EVENTOS PÚBLICOS: escuta cliques nas setas do carrossel dentro da área de apresentação.
 publicMain.addEventListener('click', event => {
   const control = event.target.closest('[data-slide]');
   if (!control) return;
@@ -715,6 +742,8 @@ publicMain.addEventListener('click', event => {
   setSlide((index + Number(control.dataset.slide) + count) % count);
 });
 
+// FORMULÁRIOS PÚBLICOS: identifica se o envio foi de contato, login ou ativação.
+// preventDefault evita recarregar a página; o contato apenas valida, não envia e-mail.
 publicMain.addEventListener('submit', async event => {
   event.preventDefault();
   const form = event.target;
@@ -746,6 +775,8 @@ publicMain.addEventListener('submit', async event => {
   }
 });
 
+// EVENTOS GERAIS: um único listener identifica o botão clicado por data-action/data-nav.
+// Essa técnica é chamada delegação de eventos e funciona com elementos criados dinamicamente.
 document.addEventListener('click', event => {
   const link = event.target.closest('[data-nav]');
   if (link && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
@@ -767,12 +798,14 @@ document.addEventListener('click', event => {
   if (action === 'close' && dialog.open) dialog.close();
 });
 
+// FILTROS EM TEMPO REAL: a digitação modifica filters e atualiza somente os resultados.
 main.addEventListener('input', event => {
   const key = event.target.dataset.filter;
   if (!Object.hasOwn(filters, key)) return;
   filters[key] = event.target.value;
   renderTicketResults();
 });
+// ABAS DE STATUS: clicar muda o filtro e aria-pressed indica qual opção está ativa.
 main.addEventListener('click', event => {
   const tab = event.target.closest('[data-status]');
   if (!tab) return;
@@ -786,6 +819,7 @@ main.addEventListener('submit', event => {
   if (event.target.id === 'profile-form') saveProfile(event);
 });
 
+// ALTERAÇÕES: responde ao período do gráfico, tema e tamanho de fonte.
 main.addEventListener('change', event => {
   if (event.target.id === 'period') {
     period = Number(event.target.value);
@@ -802,6 +836,7 @@ main.addEventListener('change', event => {
 
 $('#menu-toggle').addEventListener('click', () => setMenu(!$('#sidebar').classList.contains('is-open')));
 $('#sidebar-scrim').addEventListener('click', () => setMenu(false));
+// Adaptação móvel: se a tela ficar larga novamente, fecha o menu lateral temporário.
 window.matchMedia('(max-width: 900px)').addEventListener('change', event => {
   if (!event.matches) setMenu(false, false);
 });

@@ -14,6 +14,7 @@ const basePeople = [
 ];
 const storageKey = 'portal-novara-workspace';
 const dayMs = 24 * 60 * 60 * 1000;
+const demoPassword = 'NovaraDemo123';
 
 function seedTickets() {
   const examples = [
@@ -52,11 +53,11 @@ function loadWorkspace(storage) {
   } catch {
     // A demonstração também funciona em memória com o armazenamento indisponível.
   }
-  return { tickets: seedTickets(), invites: [], nextId: 1049, role: 'tecnico', theme: 'light' };
+  return { tickets: seedTickets(), invites: [], nextId: 1049, theme: 'light' };
 }
 
 function peopleFor(workspace) {
-  return [...basePeople, ...workspace.invites.filter(invite => invite.accepted).map(invite => ({
+  return [...basePeople, ...workspace.invites.filter(invite => invite.accepted && invite.credential).map(invite => ({
     id: invite.token, name: invite.name, email: invite.email, role: 'Colaborador(a)',
   }))];
 }
@@ -89,5 +90,26 @@ function ticketActivity(tickets, days, now = new Date()) {
 }
 
 function availableInvite(workspace, token, now = Date.now()) {
-  return workspace.invites.find(invite => invite.token === token && !invite.accepted && invite.expires > now);
+  return workspace.invites.find(invite => inviteLinkToken(invite) === token && !invite.accepted && invite.expires > now);
+}
+
+function inviteLinkToken(invite) {
+  return invite.linkToken ?? invite.token;
+}
+
+function randomHex() {
+  return toHex(crypto.getRandomValues(new Uint8Array(16)));
+}
+
+function toHex(bytes) {
+  return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function passwordDigest(password, salt) {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt: encoder.encode(salt), iterations: 600000, hash: 'SHA-256' }, key, 256,
+  );
+  return toHex(new Uint8Array(bits));
 }

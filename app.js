@@ -3,8 +3,8 @@
 const $ = selector => document.querySelector(selector);
 const main = $('#main');
 const dialog = $('#dialog');
-const profilePanel = $('#profile-panel');
-const roleSelect = $('#role');
+const publicMain = $('#public-main');
+const sessionKey = 'portal-novara-demo-session';
 const views = {
   dashboard: { hash: '#inicio', title: 'Visão geral' },
   tickets: { hash: '#chamados', title: 'Chamados' },
@@ -22,7 +22,9 @@ let workspace = loadWorkspace(localStorage);
 let view = 'dashboard';
 let period = 7;
 let toastTimeout;
-let activeInvitation = '';
+let currentPersonId = readSession();
+let loginEmail = '';
+let afterLogin = 'dashboard';
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -31,7 +33,8 @@ const icon = (name, className = '') => `<span class="icon ${className}" aria-hid
 const initials = name => name.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
 const avatar = (name, photo) => `<span class="avatar" aria-hidden="true">${photo ? `<img src="${esc(photo)}" alt="">` : esc(initials(name))}</span>`;
 const displayPerson = person => ({ ...person, ...workspace.personalProfiles?.[person.id] });
-const user = () => displayPerson(peopleFor(workspace).find(person => person.id === workspace.role) ?? basePeople[0]);
+const account = () => peopleFor(workspace).find(person => person.id === currentPersonId);
+const user = () => displayPerson(account());
 const visibleTickets = () => ticketsFor(workspace, user().id).slice().sort((a, b) => b.id - a.id);
 const canManage = () => ['tecnico', 'admin'].includes(user().id);
 const options = (entries, value = '') => entries.map(entry =>
@@ -46,6 +49,26 @@ function notify(message) {
   toast.hidden = false;
   clearTimeout(toastTimeout);
   toastTimeout = setTimeout(() => { toast.hidden = true; }, 4800);
+}
+
+function readSession() {
+  try { return sessionStorage.getItem(sessionKey); } catch { return null; }
+}
+
+function setSession(id) {
+  currentPersonId = id;
+  try {
+    if (id) sessionStorage.setItem(sessionKey, id);
+    else sessionStorage.removeItem(sessionKey);
+  } catch {
+    // A sessão ainda vale em memória nesta aba.
+  }
+}
+
+function endSession() {
+  setSession(null);
+  Object.assign(filters, { query: '', status: '', priority: '', category: '' });
+  main.replaceChildren();
 }
 
 function save() {
@@ -184,9 +207,12 @@ function dashboard(tickets) {
 function ticketPage() {
   return `${pageTitle('Chamados', 'Consulte e acompanhe as solicitações de TI.', newButton())}
   <section class="panel" aria-label="Pesquisa e lista de chamados">
+    <div class="status-tabs" role="group" aria-label="Filtrar por status">
+      ${['', ...statuses.map(status => status.name)].map(status =>
+        `<button type="button" class="button secondary" data-status="${status}" aria-pressed="${filters.status === status}">${status || 'Todos'}</button>`).join('')}
+    </div>
     <div class="filters">
       <label>Buscar<input type="search" id="ticket-search" data-filter="query" value="${esc(filters.query)}" placeholder="Título, ID ou solicitante"></label>
-      <label>Status<select data-filter="status"><option value="">Todos</option>${options(statuses.map(status => status.name), filters.status)}</select></label>
       <label>Prioridade<select data-filter="priority"><option value="">Todas</option>${options(priorities, filters.priority)}</select></label>
       <label>Categoria<select data-filter="category"><option value="">Todas</option>${options(categories, filters.category)}</select></label>
     </div>
@@ -220,16 +246,23 @@ function team() {
   const people = peopleFor(workspace).map(displayPerson).map(person => `<li>
     ${avatar(person.name, person.photo)}<div class="member-details"><strong>${esc(person.name)}</strong><small>${esc(person.contactEmail ?? person.email)}</small></div>${pill(person.role, 'neutral')}
   </li>`).join('');
-  const inviteRows = workspace.invites.filter(invite => !invite.accepted).map(invite => `
-    <li>${avatar(invite.name)}<div class="member-details"><strong>${esc(invite.name)}</strong><small>${esc(invite.email)}</small></div>
-      ${availableInvite(workspace, invite.token) ? `<a class="invite-link" href="#convite=${esc(invite.token)}">Abrir convite</a>` : pill('Expirado', 'neutral')}</li>`).join('');
+  const inviteRows = workspace.invites.filter(invite => !invite.accepted || !invite.credential).map(invite => {
+    const token = inviteLinkToken(invite);
+    const actions = availableInvite(workspace, token)
+      ? `<a class="button secondary" href="#convite=${esc(token)}">Abrir convite</a>
+        <button class="button secondary" type="button" data-copy-invite="${esc(token)}">Copiar link</button>`
+      : `${pill(invite.accepted ? 'Cadastro incompleto' : 'Expirado', 'neutral')}
+        <button class="button secondary" type="button" data-renew-invite="${esc(invite.token)}">Gerar novo link</button>`;
+    return `<li>${avatar(invite.name)}<div class="member-details"><strong>${esc(invite.name)}</strong><small>${esc(invite.email)}</small></div>
+      <div class="invite-actions">${actions}</div></li>`;
+  }).join('');
   return `${pageTitle('Equipe', 'Perfis e convites de demonstração.', action)}
     <section class="panel">
       ${panelHeading('Pessoas', 'Participantes deste espaço de trabalho')}
       <ul class="member-list">${people}</ul>
     </section>
     ${admin ? `<section class="panel table-panel">
-      ${panelHeading('Convites', 'O link vale por 24 horas neste navegador.')}
+      ${panelHeading('Convites', 'Cada link vale por 24 horas neste navegador. O portal não envia e-mail.')}
       ${inviteRows ? `<ul class="member-list">${inviteRows}</ul>` : '<p class="empty">Nenhum convite pendente.</p>'}
     </section>` : ''}`;
 }
@@ -305,11 +338,14 @@ async function saveProfile(event) {
 }
 
 function settings() {
-  return `${pageTitle('Preferências', 'Personalize sua experiência no Portal Novara.')}
+  const size = workspace.fontSize ?? '100';
+  return `${pageTitle('Preferências e acessibilidade', 'Ajuste a aparência e o tamanho do texto.')}
   <section class="panel settings-panel">
     <h2>Aparência</h2><p>O tema fica salvo neste navegador.</p>
     <label for="theme-choice">Tema</label>
     <select id="theme-choice"><option value="light">Claro</option><option value="dark"${workspace.theme === 'dark' ? ' selected' : ''}>Escuro</option></select>
+    <label for="font-size">Tamanho do texto</label>
+    <select id="font-size">${['100', '112', '125', '150'].map(value => `<option value="${value}"${value === size ? ' selected' : ''}>${value}%</option>`).join('')}</select>
   </section>
   <section class="panel settings-panel">
     <h2>Armazenamento local</h2><p>Chamados, convites e preferências ficam no navegador. Os perfis simulam as funções de uma central de TI.</p>
@@ -317,15 +353,17 @@ function settings() {
 }
 
 function render() {
+  if (!account()) return;
   const person = user();
   const tickets = visibleTickets();
-  document.documentElement.dataset.theme = workspace.theme;
+  applyAppearance();
+  $('#public-shell').hidden = true;
+  $('#app-shell').hidden = false;
+  $('#skip-link').href = '#main';
   document.title = `${views[view].title} · Portal Novara`;
   $('#breadcrumb').textContent = views[view].title;
   $('#nav-count').textContent = tickets.filter(ticket => ticket.status !== 'Resolvido').length;
-  $('#profile-button').innerHTML = `${avatar(person.name, person.photo)}<span class="profile-name"><strong>${esc(person.name)}</strong><small>${esc(person.role)}</small></span>${icon('keyboard_arrow_down', 'profile-arrow')}`;
-  roleSelect.innerHTML = peopleFor(workspace).map(displayPerson).map(p =>
-    `<option value="${esc(p.id)}"${p.id === person.id ? ' selected' : ''}>${esc(p.role)} · ${esc(p.name)}</option>`).join('');
+  $('#profile-button').innerHTML = `${avatar(person.name, person.photo)}<span class="profile-name"><strong>${esc(person.name)}</strong><small>${esc(person.role)}</small></span>${icon('keyboard_arrow_right', 'profile-arrow')}`;
   document.querySelectorAll('.nav-link').forEach(link => {
     if (link.dataset.nav === view) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
@@ -344,18 +382,11 @@ function setMenu(open, focus = true) {
   if (!open && focus) $('#menu-toggle').focus();
 }
 
-function setProfilePanel(open) {
-  profilePanel.hidden = !open;
-  $('#profile-button').setAttribute('aria-expanded', String(open));
-  if (open) roleSelect.focus();
-}
-
 function goTo(next) {
   if (dialog.open) dialog.close();
   view = next;
   history.pushState(null, '', views[view].hash);
   setMenu(false, false);
-  setProfilePanel(false);
   render();
   main.focus();
   window.scrollTo(0, 0);
@@ -364,9 +395,15 @@ function goTo(next) {
 function setTheme(theme) {
   workspace.theme = theme;
   const persisted = save();
-  document.documentElement.dataset.theme = theme;
+  applyAppearance();
   if ($('#theme-choice')) $('#theme-choice').value = theme;
   if (!persisted) notify('O tema vale apenas nesta aba.');
+}
+
+function applyAppearance() {
+  document.documentElement.dataset.theme = workspace.theme;
+  const size = workspace.fontSize ?? '100';
+  document.documentElement.style.fontSize = ['100', '112', '125', '150'].includes(size) ? size + '%' : '';
 }
 
 function showDialog(title, body, { submitLabel, onSubmit } = {}) {
@@ -383,7 +420,7 @@ function showDialog(title, body, { submitLabel, onSubmit } = {}) {
   </form>`;
   dialog.querySelector('form').addEventListener('submit', event => {
     event.preventDefault();
-    const error = $('.form-error');
+    const error = dialog.querySelector('.form-error');
     error.textContent = '';
     const message = onSubmit?.(new FormData(event.currentTarget));
     if (message) error.textContent = message;
@@ -471,72 +508,217 @@ function openTicket(id) {
   });
 }
 
+function saveInvites(invites) {
+  const original = workspace.invites;
+  workspace.invites = invites;
+  if (save()) return true;
+  workspace.invites = original;
+  return false;
+}
+
 function newInvitation() {
-  if (user().id !== 'admin') return;
+  if (account()?.id !== 'admin') return;
   showDialog('Convidar colaborador', `
     <p>O convite vale por 24 horas no navegador onde foi criado.</p>
     <label>Nome<input name="name" required minlength="2" maxlength="80" autofocus></label>
-    <label>E-mail<input name="email" type="email" maxlength="120" required></label>`, {
+    <label>E-mail fictício<input name="email" type="email" maxlength="120" required></label>`, {
     submitLabel: 'Criar convite',
     onSubmit(data) {
-      if (user().id !== 'admin') return;
+      if (account()?.id !== 'admin') return;
       const name = data.get('name').trim();
       const email = data.get('email').trim().toLowerCase();
-      if (name.length < 2) {
-        return 'Preencha o nome com pelo menos 2 caracteres.';
+      if (name.length < 2) return 'Preencha o nome com pelo menos 2 caracteres.';
+      if (basePeople.some(person => person.email === email) ||
+          workspace.invites.some(invite => invite.email === email)) {
+        return 'Já existe um cadastro ou convite para esse e-mail. Confira a lista de convites.';
       }
-      if (peopleFor(workspace).some(person => person.email === email) ||
-          workspace.invites.some(invite => invite.email === email && availableInvite(workspace, invite.token))) {
-        return 'Já existe uma pessoa cadastrada ou um convite ativo com esse e-mail.';
-      }
-      const token = Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('');
-      workspace.invites.push({ name, email, token, expires: Date.now() + dayMs, accepted: false });
-      finishChange('Convite criado. Use “Abrir convite” para simular o primeiro acesso.');
+      const invite = { name, email, token: randomHex(), expires: Date.now() + dayMs, accepted: false };
+      if (!saveInvites([...workspace.invites, invite])) return 'Não foi possível salvar o convite neste navegador.';
+      dialog.close();
+      render();
+      main.querySelector('[data-copy-invite="' + invite.token + '"]').focus();
+      notify('Convite criado. Copie o link ou abra o primeiro acesso.');
     },
   });
 }
 
-function route() {
-  const hash = location.hash;
-  if (hash.startsWith('#convite=')) {
-    const token = hash.slice('#convite='.length);
-    if (dialog.open) dialog.close();
-    activeInvitation = '';
-    dialog.replaceChildren();
-    const invite = availableInvite(workspace, token);
-    if (!invite) {
-      history.replaceState(null, '', views[view].hash);
-      notify('Convite expirado, inválido ou já utilizado.');
-      return;
-    }
-    activeInvitation = token;
-    showDialog('Aceitar convite', `<p>${esc(invite.name)} · ${esc(invite.email)}</p>
-      <p>Ao aceitar, você entra como colaborador neste ambiente demonstrativo.</p>`, {
-      submitLabel: 'Aceitar e entrar',
-      onSubmit() {
-        const current = availableInvite(workspace, token);
-        if (!current || location.hash !== '#convite=' + token) {
-          route();
-          return;
-        }
-        current.accepted = true;
-        workspace.role = current.token;
-        activeInvitation = '';
-        history.replaceState(null, '', views.dashboard.hash);
-        view = 'dashboard';
-        finishChange('Convite aceito. Seu perfil de colaborador está ativo.');
-        main.focus();
-      },
-    });
+function renewInvitation(id) {
+  if (account()?.id !== 'admin') return;
+  const invite = workspace.invites.find(item => item.token === id);
+  if (!invite || invite.credential || availableInvite(workspace, inviteLinkToken(invite))) return;
+  const renewed = { ...invite, linkToken: randomHex(), expires: Date.now() + dayMs, accepted: false };
+  const invites = workspace.invites.map(item => item === invite ? renewed : item);
+  if (!saveInvites(invites)) {
+    notify('Não foi possível renovar o convite neste navegador.');
     return;
   }
-  if (activeInvitation) {
-    activeInvitation = '';
-    if (dialog.open) dialog.close();
-  }
-  view = Object.keys(views).find(key => views[key].hash === hash) ?? 'dashboard';
   render();
+  main.querySelector('[data-copy-invite="' + renewed.linkToken + '"]').focus();
+  notify('Novo link criado. O link anterior foi desativado.');
 }
+
+async function copyInvitation(token) {
+  if (account()?.id !== 'admin' || !availableInvite(workspace, token)) return;
+  const url = new URL(location.href);
+  url.hash = 'convite=' + token;
+  const currentUrl = location.href;
+  try {
+    await navigator.clipboard.writeText(url.href);
+    notify('Link copiado. Abra no mesmo navegador para demonstrar o primeiro acesso.');
+  } catch {
+    if (location.href !== currentUrl) return;
+    showDialog('Copiar convite', `<label>Link do convite<input id="manual-invite" readonly value="${esc(url.href)}"></label>
+      <p>Copie o endereço e abra no mesmo navegador.</p>`);
+    $('#manual-invite').focus();
+    $('#manual-invite').select();
+  }
+}
+
+async function logIn(data, form) {
+  const email = data.get('email').trim().toLowerCase();
+  const password = data.get('password');
+  const preset = basePeople.find(person => person.email === email);
+  const invite = workspace.invites.find(item => item.email === email && item.accepted && item.credential);
+  const valid = preset ? password === demoPassword : invite &&
+    await passwordDigest(password, invite.credential.salt) === invite.credential.digest;
+  if (!form.isConnected) return;
+  if (!valid) return 'E-mail ou senha fictícia incorretos.';
+  setSession(preset?.id ?? invite.token);
+  loginEmail = '';
+  goTo(afterLogin);
+  afterLogin = 'dashboard';
+  notify('Você entrou no Portal Novara.');
+}
+
+async function activateAccount(data, form) {
+  const hash = location.hash;
+  const token = hash.slice('#convite='.length);
+  const name = data.get('name').trim();
+  const password = data.get('password');
+  if (name.length < 2 || name.length > 80) return 'Use de 2 a 80 caracteres no nome.';
+  if (password.length < 8 || password.length > 80) return 'Use de 8 a 80 caracteres na senha fictícia.';
+  if (password !== data.get('confirmation')) return 'As senhas digitadas são diferentes.';
+  const salt = randomHex();
+  const digest = await passwordDigest(password, salt);
+  if (!form.isConnected || location.hash !== hash) return;
+  workspace = loadWorkspace(localStorage);
+  const current = availableInvite(workspace, token);
+  if (!current) {
+    route();
+    return;
+  }
+  const invites = workspace.invites;
+  const profiles = workspace.personalProfiles;
+  workspace.invites = invites.map(item => item === current ? {
+    ...item, name, accepted: true, credential: { salt, digest },
+  } : item);
+  workspace.personalProfiles = { ...profiles, [current.token]: {
+    ...profiles?.[current.token], name, phone: data.get('phone').trim(), extension: data.get('extension').trim(),
+  } };
+  if (!save()) {
+    workspace.invites = invites;
+    workspace.personalProfiles = profiles;
+    return 'Não foi possível salvar este cadastro no navegador.';
+  }
+  endSession();
+  loginEmail = current.email;
+  afterLogin = 'dashboard';
+  history.replaceState(null, '', '#entrar');
+  route();
+  $('#login-form [name=password]').focus();
+  notify('Cadastro concluído. Entre com a senha fictícia que você criou.');
+}
+
+function showPublic(markup, title) {
+  $('#app-shell').hidden = true;
+  $('#public-shell').hidden = false;
+  $('#skip-link').href = '#public-main';
+  const entry = $('#public-entry');
+  entry.href = account() ? '#inicio' : '#entrar';
+  entry.textContent = account() ? 'Abrir painel' : 'Entrar';
+  document.title = title + ' · Portal Novara';
+  publicMain.innerHTML = markup;
+  publicMain.focus({ preventScroll: true });
+}
+
+function route() {
+  const hash = location.hash;
+  const next = Object.keys(views).find(key => views[key].hash === hash);
+  if (dialog.open) dialog.close();
+  setMenu(false, false);
+  applyAppearance();
+  if (hash.startsWith('#convite=')) {
+    const invite = availableInvite(workspace, hash.slice('#convite='.length));
+    showPublic(activationPage(invite), 'Primeiro acesso');
+  } else if (hash === '#entrar' || (!account() && next && next !== 'dashboard')) {
+    if (next) {
+      afterLogin = next;
+      history.replaceState(null, '', '#entrar');
+    }
+    showPublic(loginPage(loginEmail), 'Entrar');
+  } else if (account() && (next || !hash)) {
+    view = next ?? 'dashboard';
+    render();
+    main.focus({ preventScroll: true });
+  } else {
+    showPublic(presentationPage(Boolean(account())), 'Central de chamados');
+    setSlide(0);
+    if (hash === '#contato' || hash === '#recursos') {
+      $(hash).scrollIntoView();
+      $(hash).focus({ preventScroll: true });
+      return;
+    }
+  }
+  window.scrollTo(0, 0);
+}
+
+function signOut() {
+  endSession();
+  loginEmail = '';
+  afterLogin = 'dashboard';
+  history.replaceState(null, '', '#entrar');
+  route();
+  notify('Você saiu da conta.');
+}
+
+publicMain.addEventListener('click', event => {
+  const control = event.target.closest('[data-slide]');
+  if (!control) return;
+  const index = Number($('#portal-carousel').dataset.index);
+  const count = portalSlides.length;
+  setSlide((index + Number(control.dataset.slide) + count) % count);
+});
+
+publicMain.addEventListener('submit', async event => {
+  event.preventDefault();
+  const form = event.target;
+  const data = new FormData(form);
+  const error = form.querySelector('.form-error');
+  error.textContent = '';
+  if (form.id === 'contact-form') {
+    const result = form.querySelector('.form-result');
+    result.textContent = '';
+    if (data.get('name').trim() && data.get('message').trim().length >= 10) {
+      form.reset();
+      result.textContent = 'Mensagem validada. Nenhum e-mail foi enviado.';
+    } else {
+      error.textContent = 'Preencha o nome e uma mensagem com pelo menos 10 caracteres.';
+    }
+    return;
+  }
+  const action = form.id === 'login-form' ? logIn : activateAccount;
+  const submit = form.querySelector('button[type=submit]');
+  if (submit.disabled) return;
+  submit.disabled = true;
+  try {
+    const message = await action(data, form);
+    if (message) error.textContent = message;
+  } catch {
+    error.textContent = 'Não foi possível verificar a senha neste navegador. Abra o portal publicado ou use um servidor local.';
+  } finally {
+    submit.disabled = false;
+  }
+});
 
 document.addEventListener('click', event => {
   const link = event.target.closest('[data-nav]');
@@ -548,21 +730,30 @@ document.addEventListener('click', event => {
   const ticket = event.target.closest('[data-ticket]');
   if (ticket) openTicket(Number(ticket.dataset.ticket));
   const action = event.target.closest('[data-action]')?.dataset.action;
+  const copy = event.target.closest('[data-copy-invite]');
+  if (copy) copyInvitation(copy.dataset.copyInvite);
+  const renew = event.target.closest('[data-renew-invite]');
+  if (renew) renewInvitation(renew.dataset.renewInvite);
+  if (action === 'theme') setTheme(workspace.theme === 'dark' ? 'light' : 'dark');
+  if (action === 'logout') signOut();
   if (action === 'new') newTicket();
   if (action === 'invite') newInvitation();
   if (action === 'close' && dialog.open) dialog.close();
-});
-
-dialog.addEventListener('close', () => {
-  if (dialog.open || !activeInvitation) return;
-  if (location.hash === '#convite=' + activeInvitation) history.replaceState(null, '', views[view].hash);
-  activeInvitation = '';
 });
 
 main.addEventListener('input', event => {
   const key = event.target.dataset.filter;
   if (!Object.hasOwn(filters, key)) return;
   filters[key] = event.target.value;
+  renderTicketResults();
+});
+main.addEventListener('click', event => {
+  const tab = event.target.closest('[data-status]');
+  if (!tab) return;
+  filters.status = tab.dataset.status;
+  main.querySelectorAll('[data-status]').forEach(button => {
+    button.setAttribute('aria-pressed', String(button === tab));
+  });
   renderTicketResults();
 });
 main.addEventListener('submit', event => {
@@ -576,6 +767,11 @@ main.addEventListener('change', event => {
     $('#period').focus();
   }
   if (event.target.id === 'theme-choice') setTheme(event.target.value);
+  if (event.target.id === 'font-size') {
+    workspace.fontSize = event.target.value;
+    applyAppearance();
+    if (!save()) notify('O tamanho do texto vale apenas nesta aba.');
+  }
 });
 
 $('#menu-toggle').addEventListener('click', () => setMenu(!$('#sidebar').classList.contains('is-open')));
@@ -583,38 +779,28 @@ $('#sidebar-scrim').addEventListener('click', () => setMenu(false));
 window.matchMedia('(max-width: 900px)').addEventListener('change', event => {
   if (!event.matches) setMenu(false, false);
 });
-$('#theme-toggle').addEventListener('click', () => setTheme(workspace.theme === 'dark' ? 'light' : 'dark'));
-$('#profile-button').addEventListener('click', () => setProfilePanel(profilePanel.hidden));
-roleSelect.addEventListener('change', () => {
-  workspace.role = roleSelect.value;
-  setProfilePanel(false);
-  finishChange(`Perfil alterado para ${user().name}.`);
-  $('#profile-button').focus();
-});
-
 function search() {
   if (view !== 'tickets') goTo('tickets');
   $('#ticket-search').focus();
 }
 $('#global-search').addEventListener('click', search);
 document.addEventListener('keydown', event => {
-  if (dialog.open) return;
+  if (dialog.open || $('#app-shell').hidden) return;
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
     event.preventDefault();
     search();
   }
-  if (event.key === 'Escape' && !profilePanel.hidden) {
-    setProfilePanel(false);
-    $('#profile-button').focus();
-  } else if (event.key === 'Escape' && $('#sidebar').classList.contains('is-open')) {
-    setMenu(false);
-  }
+  if (event.key === 'Escape' && $('#sidebar').classList.contains('is-open')) setMenu(false);
 });
-window.addEventListener('hashchange', () => { if (location.hash !== '#main') route(); });
+window.addEventListener('hashchange', () => { if (!['#main', '#public-main'].includes(location.hash)) route(); });
 window.addEventListener('storage', event => {
   if (event.key !== storageKey) return;
   workspace = loadWorkspace(localStorage);
-  if (activeInvitation) route();
-  else render();
+  const hash = location.hash;
+  if (hash.startsWith('#convite=') && !availableInvite(workspace, hash.slice('#convite='.length))) route();
+  if (!$('#app-shell').hidden) {
+    if (account()) render();
+    else route();
+  } else applyAppearance();
 });
 route();

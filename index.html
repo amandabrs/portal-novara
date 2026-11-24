@@ -6,13 +6,28 @@
   <meta name="description" content="Portal Novara, central demonstrativa de chamados de TI.">
   <meta name="theme-color" content="#18172b">
   <title>Visão geral · Portal Novara</title>
-  <link rel="stylesheet" href="styles.css?v=2.2">
-  <script src="data.js" defer></script>
-  <script src="app.js?v=2.2" defer></script>
+  <link rel="stylesheet" href="styles.css?v=2.3">
+  <script src="data.js?v=2.3" defer></script>
+  <script src="public.js?v=2.3" defer></script>
+  <script src="app.js?v=2.3" defer></script>
 </head>
 <body>
-  <a class="skip" href="#main">Pular para o conteúdo</a>
-  <div class="app-shell">
+  <a class="skip" id="skip-link" href="#public-main">Pular para o conteúdo</a>
+  <div id="public-shell">
+    <header class="public-header">
+      <a class="brand" href="#apresentacao">
+        <span class="brand-mark"><span class="icon" aria-hidden="true">workspaces</span></span>
+        <span>Portal Novara<small>Novara TI</small></span>
+      </a>
+      <nav aria-label="Navegação do site">
+        <a href="#recursos">Recursos</a>
+        <a href="#contato">Contato</a>
+        <a class="button primary" id="public-entry" href="#entrar">Entrar</a>
+      </nav>
+    </header>
+    <main class="public-main" id="public-main" tabindex="-1"></main>
+  </div>
+  <div class="app-shell" id="app-shell" hidden>
     <aside class="sidebar" id="sidebar" aria-label="Menu principal">
       <a class="brand" href="#inicio" data-nav="dashboard">
         <span class="brand-mark"><span class="icon" aria-hidden="true">workspaces</span></span>
@@ -26,15 +41,12 @@
         <div class="nav-label nav-second">ESPAÇO DE TRABALHO</div>
         <a class="nav-link" href="#equipe" data-nav="team"><span class="icon" aria-hidden="true">group</span>Equipe</a>
         <a class="nav-link" href="#meu-perfil" data-nav="profile"><span class="icon" aria-hidden="true">group</span>Meu perfil</a>
-        <a class="nav-link" href="#preferencias" data-nav="settings"><span class="icon" aria-hidden="true">settings</span>Preferências</a>
+        <a class="nav-link" href="#preferencias" data-nav="settings"><span class="icon" aria-hidden="true">settings</span>Acessibilidade</a>
       </nav>
       <div class="sidebar-bottom">
         <div class="workspace-note"><span class="demo-dot"></span> Ambiente demonstrativo</div>
-        <button class="profile-button" id="profile-button" type="button" aria-expanded="false" aria-controls="profile-panel"></button>
-        <div class="profile-panel" id="profile-panel" hidden>
-          <label for="role">Perfil de demonstração</label>
-          <select id="role"></select>
-        </div>
+        <a class="profile-button" id="profile-button" href="#meu-perfil" data-nav="profile" aria-label="Meu perfil"></a>
+        <button class="logout-button" data-action="logout" type="button">Sair da conta</button>
       </div>
     </aside>
     <button class="sidebar-scrim" id="sidebar-scrim" type="button" aria-label="Fechar menu" hidden></button>
@@ -48,12 +60,20 @@
         </div>
         <div class="header-tools">
           <button class="search-trigger" id="global-search" type="button" aria-label="Buscar chamados"><span class="icon" aria-hidden="true">search</span><span class="search-caption">Buscar chamados</span><kbd>Ctrl K</kbd></button>
-          <button class="icon-button" id="theme-toggle" type="button" aria-label="Alternar tema"><span class="icon" aria-hidden="true">contrast</span></button>
+          <button class="icon-button" data-action="theme" type="button" aria-label="Alternar tema"><span class="icon" aria-hidden="true">contrast</span></button>
         </div>
       </header>
       <main id="main" tabindex="-1"></main>
     </div>
   </div>
+  <footer class="site-footer">
+    <div><strong>Portal Novara</strong><p>Projeto acadêmico de Desenvolvimento de Interfaces.</p></div>
+    <nav aria-label="Links do rodapé">
+      <a href="#apresentacao">Apresentação</a>
+      <a href="#contato">Contato</a>
+      <a href="https://github.com/amandabrs/portal-novara">Código no GitHub</a>
+    </nav>
+  </footer>
   <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </body>

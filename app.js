@@ -10,6 +10,7 @@ const views = {
   tickets: { hash: '#chamados', title: 'Chamados' },
   reports: { hash: '#relatorios', title: 'Relatórios' },
   team: { hash: '#equipe', title: 'Equipe' },
+  profile: { hash: '#meu-perfil', title: 'Meu perfil' },
   settings: { hash: '#preferencias', title: 'Preferências' },
 };
 const filters = { query: '', status: '', priority: '', category: '' };
@@ -27,8 +28,9 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({
 })[char]);
 const icon = (name, className = '') => `<span class="icon ${className}" aria-hidden="true">${name}</span>`;
 const initials = name => name.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
-const avatar = name => `<span class="avatar" aria-hidden="true">${esc(initials(name))}</span>`;
-const user = () => peopleFor(workspace).find(person => person.id === workspace.role) ?? basePeople[0];
+const avatar = (name, photo) => `<span class="avatar" aria-hidden="true">${photo ? `<img src="${esc(photo)}" alt="">` : esc(initials(name))}</span>`;
+const displayPerson = person => ({ ...person, ...workspace.personalProfiles?.[person.id] });
+const user = () => displayPerson(peopleFor(workspace).find(person => person.id === workspace.role) ?? basePeople[0]);
 const visibleTickets = () => ticketsFor(workspace, user().id).slice().sort((a, b) => b.id - a.id);
 const canManage = () => ['tecnico', 'admin'].includes(user().id);
 const options = (entries, value = '') => entries.map(entry =>
@@ -214,8 +216,8 @@ function reports(tickets) {
 function team() {
   const admin = user().id === 'admin';
   const action = admin ? `<button class="button primary" type="button" data-action="invite">${icon('add')}Convidar</button>` : '';
-  const people = peopleFor(workspace).map(person => `<li>
-    ${avatar(person.name)}<div class="member-details"><strong>${esc(person.name)}</strong><small>${esc(person.email)}</small></div>${pill(person.role, 'neutral')}
+  const people = peopleFor(workspace).map(displayPerson).map(person => `<li>
+    ${avatar(person.name, person.photo)}<div class="member-details"><strong>${esc(person.name)}</strong><small>${esc(person.contactEmail ?? person.email)}</small></div>${pill(person.role, 'neutral')}
   </li>`).join('');
   const inviteRows = workspace.invites.filter(invite => !invite.accepted).map(invite => `
     <li>${avatar(invite.name)}<div class="member-details"><strong>${esc(invite.name)}</strong><small>${esc(invite.email)}</small></div>
@@ -229,6 +231,76 @@ function team() {
       ${panelHeading('Convites', 'O link vale por 24 horas neste navegador.')}
       ${inviteRows ? `<ul class="member-list">${inviteRows}</ul>` : '<p class="empty">Nenhum convite pendente.</p>'}
     </section>` : ''}`;
+}
+
+function profile() {
+  const person = user();
+  return `${pageTitle('Meu perfil', 'Edite os dados deste perfil de demonstração.')}
+    <form id="profile-form" class="panel settings-panel profile-form">
+      <div class="profile-preview">${avatar(person.name, person.photo)}<div><strong>${esc(person.name)}</strong><p>${esc(person.role)}</p></div></div>
+      <label>Nome de exibição<input name="name" value="${esc(person.name)}" required minlength="2" maxlength="80" autocomplete="name"></label>
+      <label>E-mail de contato<input name="contactEmail" type="email" value="${esc(person.contactEmail ?? person.email)}" maxlength="120" autocomplete="email"></label>
+      <div class="form-grid">
+        <label>Telefone<input name="phone" type="tel" value="${esc(person.phone)}" maxlength="24" autocomplete="tel"></label>
+        <label>Ramal<input name="extension" value="${esc(person.extension)}" maxlength="8"></label>
+      </div>
+      <label>Foto de perfil<input name="photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="photo-hint"></label>
+      <p id="photo-hint">JPG, PNG ou WebP de até 1 MB.</p>
+      ${person.photo ? '<label class="remove-photo"><input name="removePhoto" type="checkbox"> Remover foto atual</label>' : ''}
+      <p class="form-error" role="alert"></p>
+      <button class="button primary" type="submit">Salvar perfil</button>
+    </form>`;
+}
+
+async function saveProfile(event) {
+  event.preventDefault();
+  const form = event.target;
+  const person = user();
+  const data = new FormData(form);
+  const error = form.querySelector('.form-error');
+  const submit = form.querySelector('button[type=submit]');
+  const name = data.get('name').trim();
+  const file = data.get('photo');
+  error.textContent = '';
+  if (name.length < 2) {
+    error.textContent = 'Digite pelo menos dois caracteres no nome.';
+    return;
+  }
+  submit.disabled = true;
+  try {
+    let photo = data.has('removePhoto') ? '' : person.photo;
+    if (file.size && !data.has('removePhoto')) {
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 1024 * 1024) {
+        error.textContent = 'Escolha uma foto JPG, PNG ou WebP de até 1 MB.';
+        return;
+      }
+      photo = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+    const previous = workspace.personalProfiles;
+    workspace.personalProfiles = { ...previous, [person.id]: {
+      name, contactEmail: data.get('contactEmail').trim(), phone: data.get('phone').trim(),
+      extension: data.get('extension').trim(), photo,
+    } };
+    if (!save()) {
+      workspace.personalProfiles = previous;
+      error.textContent = 'Não foi possível salvar. Confira o espaço disponível no navegador.';
+      return;
+    }
+    if (form.isConnected) {
+      render();
+      $('#profile-form button').focus();
+    }
+    notify('Perfil atualizado.');
+  } catch {
+    error.textContent = 'Não foi possível carregar a foto.';
+  } finally {
+    submit.disabled = false;
+  }
 }
 
 function settings() {
@@ -250,14 +322,14 @@ function render() {
   document.title = `${views[view].title} · Portal Novara`;
   $('#breadcrumb').textContent = views[view].title;
   $('#nav-count').textContent = tickets.filter(ticket => ticket.status !== 'Resolvido').length;
-  $('#profile-button').innerHTML = `${avatar(person.name)}<span class="profile-name"><strong>${esc(person.name)}</strong><small>${esc(person.role)}</small></span>${icon('keyboard_arrow_down', 'profile-arrow')}`;
-  roleSelect.innerHTML = peopleFor(workspace).map(p =>
+  $('#profile-button').innerHTML = `${avatar(person.name, person.photo)}<span class="profile-name"><strong>${esc(person.name)}</strong><small>${esc(person.role)}</small></span>${icon('keyboard_arrow_down', 'profile-arrow')}`;
+  roleSelect.innerHTML = peopleFor(workspace).map(displayPerson).map(p =>
     `<option value="${esc(p.id)}"${p.id === person.id ? ' selected' : ''}>${esc(p.role)} · ${esc(p.name)}</option>`).join('');
   document.querySelectorAll('.nav-link').forEach(link => {
     if (link.dataset.nav === view) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   });
-  const layouts = { dashboard, tickets: ticketPage, reports, team, settings };
+  const layouts = { dashboard, tickets: ticketPage, reports, team, profile, settings };
   main.innerHTML = layouts[view](tickets);
   if (view === 'tickets') renderTicketResults();
 }
@@ -468,6 +540,9 @@ main.addEventListener('input', event => {
   if (!Object.hasOwn(filters, key)) return;
   filters[key] = event.target.value;
   renderTicketResults();
+});
+main.addEventListener('submit', event => {
+  if (event.target.id === 'profile-form') saveProfile(event);
 });
 
 main.addEventListener('change', event => {

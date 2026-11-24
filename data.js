@@ -8,11 +8,11 @@ const statuses = [
 const priorities = ['Baixa', 'Média', 'Alta', 'Crítica'];
 const categories = ['Acesso', 'Equipamentos', 'Rede', 'Sistemas', 'Outros'];
 const basePeople = [
-  { id: 'tecnico', name: 'Amanda Barros', email: 'tecnico@coredesk.example', role: 'Técnica de TI' },
-  { id: 'colaborador', name: 'Marina Costa', email: 'marina@coredesk.example', role: 'Colaboradora' },
-  { id: 'admin', name: 'Rafael Lima', email: 'admin@coredesk.example', role: 'Administrador' },
+  { id: 'tecnico', name: 'Amanda Barros', email: 'tecnico@novarati.example', role: 'Técnica de TI' },
+  { id: 'colaborador', name: 'Marina Costa', email: 'marina@novarati.example', role: 'Colaboradora' },
+  { id: 'admin', name: 'Rafael Lima', email: 'admin@novarati.example', role: 'Administrador' },
 ];
-const storageKey = 'coredesk-v2-workspace';
+const storageKey = 'portal-novara-workspace';
 const dayMs = 24 * 60 * 60 * 1000;
 
 function seedTickets() {
@@ -45,7 +45,7 @@ function seedTickets() {
 
 function loadWorkspace(storage) {
   try {
-    const saved = JSON.parse(storage.getItem(storageKey));
+    const saved = JSON.parse(storage.getItem(storageKey) ?? storage.getItem("coredesk-v2-workspace"));
     if (saved && Array.isArray(saved.tickets) && Array.isArray(saved.invites) && Number.isInteger(saved.nextId)) {
       return saved;
     }

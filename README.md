@@ -1,6 +1,6 @@
-# COREdesk v2
+# Portal Novara
 
-Central de chamados de TI feita em HTML, CSS e JavaScript. A interface inclui visão geral, fila de chamados com busca e filtros, relatórios, preferências e troca de perfil.
+Central de chamados da Novara TI feita em HTML, CSS e JavaScript. A interface inclui visão geral, fila de chamados com busca e filtros, relatórios, preferências e troca de perfil.
 
 ## Como abrir
 
@@ -14,7 +14,7 @@ No perfil **Administrador**, abra **Equipe → Convidar** e depois **Abrir convi
 
 ## Dados
 
-Chamados, convites, perfil escolhido e tema são gravados em `localStorage` na chave `coredesk-v2-workspace`. O portal é uma demonstração estática sem autenticação, banco de dados ou sincronização entre dispositivos. Use dados fictícios.
+Chamados, convites, perfil escolhido e tema são gravados em `localStorage` na chave `portal-novara-workspace`. O portal é uma demonstração estática sem autenticação, banco de dados ou sincronização entre dispositivos. Use dados fictícios.
 
 ## Verificação e hospedagem
 

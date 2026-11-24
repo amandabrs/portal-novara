@@ -232,7 +232,7 @@ function team() {
 }
 
 function settings() {
-  return `${pageTitle('Preferências', 'Personalize sua experiência no COREdesk.')}
+  return `${pageTitle('Preferências', 'Personalize sua experiência no Portal Novara.')}
   <section class="panel settings-panel">
     <h2>Aparência</h2><p>O tema fica salvo neste navegador.</p>
     <label for="theme-choice">Tema</label>
@@ -247,7 +247,7 @@ function render() {
   const person = user();
   const tickets = visibleTickets();
   document.documentElement.dataset.theme = workspace.theme;
-  document.title = `${views[view].title} · COREdesk`;
+  document.title = `${views[view].title} · Portal Novara`;
   $('#breadcrumb').textContent = views[view].title;
   $('#nav-count').textContent = tickets.filter(ticket => ticket.status !== 'Resolvido').length;
   $('#profile-button').innerHTML = `${avatar(person.name)}<span class="profile-name"><strong>${esc(person.name)}</strong><small>${esc(person.role)}</small></span>${icon('keyboard_arrow_down', 'profile-arrow')}`;

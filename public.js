@@ -1,6 +1,7 @@
 'use strict';
 
 // CARROSSEL: os três objetos definem imagem, título e legenda de cada slide.
+// CARROSSEL: os três objetos definem imagem, título e legenda de cada slide.
 const portalSlides = [
   { image: 'equipe', title: 'Um ponto de encontro para a equipe', caption: 'Acompanhe o que está aberto, em andamento ou resolvido.' },
   { image: 'atendimento', title: 'Respostas no próprio chamado', caption: 'Leia as orientações do suporte junto com o histórico da solicitação.' },
@@ -11,6 +12,7 @@ const portalSlides = [
 // signedIn altera o texto do botão conforme exista ou não uma sessão demonstrativa.
 function presentationPage(signedIn) {
   const entry = signedIn ? 'Abrir painel' : 'Entrar no portal';
+  // Template literal (`...`) permite construir HTML com variáveis interpoladas por ${...}.
   return `
     <section class="public-hero">
       <div class="public-hero-copy">
@@ -57,6 +59,7 @@ function setSlide(index) {
   const slide = portalSlides[index];
   const carousel = $('#portal-carousel');
   carousel.dataset.index = index;
+  // Troca o caminho da imagem sem recarregar a página; a legenda também é atualizada.
   $('#slide-image').src = `assets/${slide.image}.jpg`;
   $('#slide-caption').innerHTML = `<strong>${slide.title}</strong><p>${slide.caption}</p><small>Imagem ${index + 1} de ${portalSlides.length}</small>`;
 }
@@ -82,6 +85,7 @@ function loginPage(email) {
 // PRIMEIRO ACESSO: mostra formulário de ativação apenas para convite local válido.
 // Não envia e-mail nem cria conta em servidor; é uma demonstração de interface.
 function activationPage(invite) {
+  // Exibe um aviso quando o convite não existe, expirou ou pertence a outro navegador.
   if (!invite) return `
     <section class="panel access-form">
       <h1>Convite indisponível</h1>

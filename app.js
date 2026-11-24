@@ -244,7 +244,7 @@ function team() {
   const admin = user().id === 'admin';
   const action = admin ? `<button class="button primary" type="button" data-action="invite">${icon('add')}Convidar</button>` : '';
   const people = peopleFor(workspace).map(displayPerson).map(person => `<li>
-    ${avatar(person.name, person.photo)}<div class="member-details"><strong>${esc(person.name)}</strong><small>${esc(person.contactEmail ?? person.email)}</small></div>${pill(person.role, 'neutral')}
+    ${avatar(person.name, person.photo)}<div class="member-details"><strong>${esc(person.name)}</strong><small>${esc(person.email)}</small></div>${pill(person.role, 'neutral')}
   </li>`).join('');
   const inviteRows = workspace.invites.filter(invite => !invite.accepted || !invite.credential).map(invite => {
     const token = inviteLinkToken(invite);

@@ -3,20 +3,6 @@
 Central demonstrativa de chamados da Novara TI, desenvolvida em HTML, CSS e JavaScript para a disciplina Desenvolvimento de Interfaces. A aplicação estática reúne apresentação, login, fila de chamados, relatórios e área de perfil.
 
 - [Abrir o Portal Novara](https://amandabrs.github.io/portal-novara/)
-- [Consultar o histórico de versões](https://github.com/amandabrs/portal-novara/commits/main/)
-
-## Guia para estudar e explicar os arquivos ao professor
-
-- **[assets/LEIA-ME.md](assets/LEIA-ME.md)**: finalidade das fotos, fontes e licenças da pasta `assets`.
-- Os arquivos `index.html`, `styles.css`, `data.js`, `public.js` e `app.js` têm comentários didáticos diretamente no código. Procure por `//`, `/* ... */` e `<!-- ... -->`.
-- `package.json` não aceita comentários por ser JSON válido; `.nojekyll` é um marcador de publicação e deve permanecer intacto.
-
-## Como abrir
-
-1. Baixe e extraia o ZIP do projeto ou clone o repositório.
-2. No VS Code, abra a pasta que contém `index.html`.
-3. Use a versão publicada ou execute `npm run dev` com Node.js e Python 3 instalados. Acesse `http://localhost:4321`. O primeiro acesso por convite usa Web Crypto, disponível via HTTPS e localhost.
-4. Use `npm run check` para verificar a sintaxe dos scripts.
 
 ## Roteiro de demonstração
 

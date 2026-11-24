@@ -1,11 +1,14 @@
 'use strict';
 
+// CARROSSEL: os três objetos definem imagem, título e legenda de cada slide.
 const portalSlides = [
   { image: 'equipe', title: 'Um ponto de encontro para a equipe', caption: 'Acompanhe o que está aberto, em andamento ou resolvido.' },
   { image: 'atendimento', title: 'Respostas no próprio chamado', caption: 'Leia as orientações do suporte junto com o histórico da solicitação.' },
   { image: 'tecnologia', title: 'Relatórios para organizar a fila', caption: 'Consulte o volume de chamados por categoria e prioridade.' },
 ];
 
+// APRESENTAÇÃO: monta a página pública com cartões, carrossel, formulário e acesso ao painel.
+// signedIn altera o texto do botão conforme exista ou não uma sessão demonstrativa.
 function presentationPage(signedIn) {
   const entry = signedIn ? 'Abrir painel' : 'Entrar no portal';
   return `
@@ -49,6 +52,7 @@ function presentationPage(signedIn) {
     </section>`;
 }
 
+// INTERAÇÃO DO CARROSSEL: troca foto e legenda e atualiza o número do slide apresentado.
 function setSlide(index) {
   const slide = portalSlides[index];
   const carousel = $('#portal-carousel');
@@ -57,6 +61,7 @@ function setSlide(index) {
   $('#slide-caption').innerHTML = `<strong>${slide.title}</strong><p>${slide.caption}</p><small>Imagem ${index + 1} de ${portalSlides.length}</small>`;
 }
 
+// FORMULÁRIO DE LOGIN: gera os campos; quem valida a entrada é o app.js.
 function loginPage(email) {
   return `
     <section class="access-layout">
@@ -74,6 +79,8 @@ function loginPage(email) {
     </section>`;
 }
 
+// PRIMEIRO ACESSO: mostra formulário de ativação apenas para convite local válido.
+// Não envia e-mail nem cria conta em servidor; é uma demonstração de interface.
 function activationPage(invite) {
   if (!invite) return `
     <section class="panel access-form">

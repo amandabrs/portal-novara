@@ -7,7 +7,6 @@ Central demonstrativa de chamados da Novara TI, desenvolvida em HTML, CSS e Java
 
 ## Guia para estudar e explicar os arquivos ao professor
 
-- **[GUIA_DE_ESTUDO_DO_CODIGO.md](GUIA_DE_ESTUDO_DO_CODIGO.md)**: explicação em português de todos os arquivos, funções principais, armazenamento, navegação e exemplos de perguntas da apresentação.
 - **[assets/LEIA-ME.md](assets/LEIA-ME.md)**: finalidade das fotos, fontes e licenças da pasta `assets`.
 - Os arquivos `index.html`, `styles.css`, `data.js`, `public.js` e `app.js` têm comentários didáticos diretamente no código. Procure por `//`, `/* ... */` e `<!-- ... -->`.
 - `package.json` não aceita comentários por ser JSON válido; `.nojekyll` é um marcador de publicação e deve permanecer intacto.

@@ -5,6 +5,13 @@ Central demonstrativa de chamados da Novara TI, desenvolvida em HTML, CSS e Java
 - [Abrir o Portal Novara](https://amandabrs.github.io/portal-novara/)
 - [Consultar o histórico de versões](https://github.com/amandabrs/portal-novara/commits/main/)
 
+## Guia para estudar e explicar os arquivos ao professor
+
+- **[GUIA_DE_ESTUDO_DO_CODIGO.md](GUIA_DE_ESTUDO_DO_CODIGO.md)**: explicação em português de todos os arquivos, funções principais, armazenamento, navegação e exemplos de perguntas da apresentação.
+- **[assets/LEIA-ME.md](assets/LEIA-ME.md)**: finalidade das fotos, fontes e licenças da pasta `assets`.
+- Os arquivos `index.html`, `styles.css`, `data.js`, `public.js` e `app.js` têm comentários didáticos diretamente no código. Procure por `//`, `/* ... */` e `<!-- ... -->`.
+- `package.json` não aceita comentários por ser JSON válido; `.nojekyll` é um marcador de publicação e deve permanecer intacto.
+
 ## Como abrir
 
 1. Baixe e extraia o ZIP do projeto ou clone o repositório.

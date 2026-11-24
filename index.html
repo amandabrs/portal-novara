@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="COREdesk, central demonstrativa de chamados de TI.">
+  <meta name="theme-color" content="#18172b">
+  <title>Visão geral · COREdesk</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="data.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Pular para o conteúdo</a>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Menu principal">
+      <a class="brand" href="#inicio" data-nav="dashboard">
+        <span class="brand-mark"><span class="icon" aria-hidden="true">workspaces</span></span>
+        <span>CORE<span class="brand-light">desk</span><small>Central de TI</small></span>
+      </a>
+      <nav aria-label="Navegação principal">
+        <div class="nav-label">ÁREA DE TRABALHO</div>
+        <a class="nav-link" href="#inicio" data-nav="dashboard" aria-current="page"><span class="icon" aria-hidden="true">grid_view</span>Visão geral</a>
+        <a class="nav-link" href="#chamados" data-nav="tickets"><span class="icon" aria-hidden="true">confirmation_number</span>Chamados <span class="nav-count" id="nav-count"></span></a>
+        <a class="nav-link" href="#relatorios" data-nav="reports"><span class="icon" aria-hidden="true">bar_chart</span>Relatórios</a>
+        <div class="nav-label nav-second">ESPAÇO DE TRABALHO</div>
+        <a class="nav-link" href="#equipe" data-nav="team"><span class="icon" aria-hidden="true">group</span>Equipe</a>
+        <a class="nav-link" href="#preferencias" data-nav="settings"><span class="icon" aria-hidden="true">settings</span>Preferências</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="workspace-note"><span class="demo-dot"></span> Ambiente demonstrativo</div>
+        <button class="profile-button" id="profile-button" type="button" aria-expanded="false" aria-controls="profile-panel"></button>
+        <div class="profile-panel" id="profile-panel" hidden>
+          <label for="role">Perfil de demonstração</label>
+          <select id="role"></select>
+        </div>
+      </div>
+    </aside>
+    <button class="sidebar-scrim" id="sidebar-scrim" type="button" aria-label="Fechar menu" hidden></button>
+    <div class="content-shell">
+      <header class="topbar">
+        <div class="header-location">
+          <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="sidebar"><span class="icon" aria-hidden="true">menu</span></button>
+          <span class="top-home">Central de TI</span>
+          <span class="icon breadcrumb-icon" aria-hidden="true">keyboard_arrow_right</span>
+          <strong id="breadcrumb">Visão geral</strong>
+        </div>
+        <div class="header-tools">
+          <button class="search-trigger" id="global-search" type="button" aria-label="Buscar chamados"><span class="icon" aria-hidden="true">search</span><span class="search-caption">Buscar chamados</span><kbd>Ctrl K</kbd></button>
+          <button class="icon-button" id="theme-toggle" type="button" aria-label="Alternar tema"><span class="icon" aria-hidden="true">contrast</span></button>
+        </div>
+      </header>
+      <main id="main" tabindex="-1"></main>
+    </div>
+  </div>
+  <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

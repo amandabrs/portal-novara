@@ -209,7 +209,16 @@ dialog::backdrop{background:#17132e9e}
 .settings-panel label{margin-top:14px}
 .settings-panel select{margin-top:5px}
 .ticket-description{white-space:pre-wrap}
-.avatar img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.avatar{position:relative;overflow:hidden}
+.avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ticket-replies{border-top:1px solid var(--line);padding-top:12px;display:grid;gap:10px}
+.ticket-replies h3{font-size:.95rem;margin:0}
+.ticket-replies p{font-size:.85rem}
+.reply-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.reply-list li{padding:10px 12px;border-radius:8px;background:var(--soft)}
+.reply-header{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 10px;font-size:.82rem}
+.reply-header time{color:var(--muted);font-size:.75rem}
+.reply-list p{white-space:pre-wrap;margin-top:4px}
 .profile-preview{display:flex;align-items:center;gap:12px}
 .profile-preview .avatar{width:60px;height:60px;font-size:1.1rem}
 .profile-form .remove-photo{display:flex;align-items:center;gap:8px}

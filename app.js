@@ -15,6 +15,7 @@ const views = {
 };
 const filters = { query: '', status: '', priority: '', category: '' };
 const shortDate = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' });
+const replyDate = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 const weekday = new Intl.DateTimeFormat('pt-BR', { weekday: 'short' });
 const longDate = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'full' });
 let workspace = loadWorkspace(localStorage);
@@ -422,6 +423,7 @@ function openTicket(id) {
   const ticket = visibleTickets().find(item => item.id === id);
   if (!ticket) return;
   const detail = (label, value) => `<div><dt>${label}</dt><dd>${esc(value)}</dd></div>`;
+  const replies = ticket.replies ?? [];
   showDialog(`#${ticket.id} · ${ticket.title}`, `
     <dl class="details">
       ${detail('Solicitante', ticket.requester)}${detail('Abertura', shortDate.format(ticket.created))}
@@ -432,16 +434,38 @@ function openTicket(id) {
     ${canManage() ? `<div class="form-grid">
       <label>Alterar status<select name="status">${options(statuses.map(status => status.name), ticket.status)}</select></label>
       <label>Alterar prioridade<select name="priority">${options(priorities, ticket.priority)}</select></label>
-    </div>` : ''}`, {
+    </div>` : ''}
+    <section class="ticket-replies" aria-labelledby="replies-heading">
+      <h3 id="replies-heading">Respostas do atendimento</h3>
+      ${replies.length ? `<ol class="reply-list">${replies.map(reply => `
+        <li><div class="reply-header"><strong>${esc(reply.author)}</strong>
+          <time datetime="${new Date(reply.created).toISOString()}">${esc(replyDate.format(reply.created))}</time></div>
+          <p>${esc(reply.message)}</p></li>`).join('')}</ol>` : '<p>Nenhuma resposta neste chamado.</p>'}
+      ${canManage() ? '<label>Escrever resposta (opcional)<textarea name="reply" maxlength="1000" placeholder="Informe o que foi feito ou oriente o solicitante."></textarea></label>' : ''}
+    </section>`, {
     submitLabel: canManage() ? 'Salvar alterações' : '',
     onSubmit(data) {
       if (!canManage()) return;
       const current = workspace.tickets.find(item => item.id === id);
       if (!current) return;
-      current.status = data.get('status');
-      current.priority = data.get('priority');
-      current.resolved = current.status === 'Resolvido' ? (current.resolved ?? Date.now()) : null;
-      finishChange(`Chamado #${id} atualizado.`);
+      const message = data.get('reply').trim();
+      if (message.length > 1000) return 'Escreva uma resposta de até 1000 caracteres.';
+      const status = data.get('status');
+      const updated = { ...current, status, priority: data.get('priority'),
+        resolved: status === 'Resolvido' ? (current.resolved ?? Date.now()) : null,
+      };
+      if (message) {
+        updated.replies = [...(current.replies ?? []), { author: user().name, message, created: Date.now() }];
+      }
+      const original = workspace.tickets;
+      workspace.tickets = original.map(item => item.id === id ? updated : item);
+      if (!save()) {
+        workspace.tickets = original;
+        return 'Não foi possível salvar. Confira o espaço disponível no navegador.';
+      }
+      dialog.close();
+      render();
+      notify(message ? `Resposta salva no chamado #${id}.` : `Chamado #${id} atualizado.`);
       (main.querySelector(`[data-ticket="${id}"]`) ?? main).focus();
     },
   });

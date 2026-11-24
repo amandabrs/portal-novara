@@ -7,6 +7,8 @@
   <meta name="description" content="Portal Novara, central de chamados de TI.">
   <meta name="theme-color" content="#18172b">
   <title>Visão geral · Portal Novara</title>
+  <!-- CSS separado para aparência. O parâmetro ?v ajuda a renovar arquivos em cache. -->
+  <link rel="stylesheet" href="styles.css?v=2.4">
   <link rel="stylesheet" href="styles.css?v=2.4">
   <!-- data.js define dados e regras; public.js monta a apresentação/login; app.js controla o painel e as ações. -->
   <!-- defer executa os scripts após o HTML ser interpretado, respeitando esta ordem. -->
@@ -19,6 +21,8 @@
   <a class="skip" id="skip-link" href="#public-main">Pular para o conteúdo</a>
   <!-- Área pública (apresentação, contato e login): o public.js insere seu conteúdo em public-main. -->
   <div id="public-shell">
+    <!-- Cabeçalho da apresentação: identidade Novara, links de recursos/contato e entrada. -->
+    <header class="public-header">
     <header class="public-header">
       <a class="brand" href="#apresentacao">
         <span class="brand-mark"><span class="icon" aria-hidden="true">workspaces</span></span>
@@ -40,6 +44,8 @@
         <span class="brand-mark"><span class="icon" aria-hidden="true">workspaces</span></span>
         <span>Portal <span class="brand-light">Novara</span><small>Novara TI</small></span>
       </a>
+      <!-- aria-label nomeia o menu para leitores de tela. data-nav informa ao JS qual tela abrir. -->
+      <nav aria-label="Navegação principal">
       <nav aria-label="Navegação principal">
         <div class="nav-label">ÁREA DE TRABALHO</div>
         <a class="nav-link" href="#inicio" data-nav="dashboard" aria-current="page"><span class="icon" aria-hidden="true">grid_view</span>Visão geral</a>
@@ -65,6 +71,8 @@
           <strong id="breadcrumb">Visão geral</strong>
         </div>
         <div class="header-tools">
+          <!-- O botão de busca global é conectado aos eventos do app.js. -->
+          <button class="search-trigger"
           <button class="search-trigger" id="global-search" type="button" aria-label="Buscar chamados"><span class="icon" aria-hidden="true">search</span><span class="search-caption">Buscar chamados</span><kbd>Ctrl K</kbd></button>
           <button class="icon-button" data-action="theme" type="button" aria-label="Alternar tema"><span class="icon" aria-hidden="true">contrast</span></button>
         </div>
@@ -73,6 +81,8 @@
       <main id="main" tabindex="-1"></main>
     </div>
   </div>
+  <!-- Rodapé com autoria, e-mail e links públicos para perfil e repositório. -->
+  <footer class="site-footer">
   <footer class="site-footer">
     <div><strong>Portal Novara</strong><p>Desenvolvido por Amanda Barros</p>
       <a href="mailto:amanda.barross@sempreceub.com">amanda.barross@sempreceub.com</a></div>

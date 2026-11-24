@@ -22,6 +22,7 @@ const demoPassword = 'NovaraDemo123';
 
 // PRIMEIRO ACESSO: cria 12 chamados fictícios para demonstrar a interface antes de novos cadastros.
 function seedTickets() {
+  // Cada linha informa: título, categoria, prioridade, índice do status, dias atrás e solicitante.
   const examples = [
     ['Acesso ao painel financeiro', 'Acesso', 'Alta', 0, 0, 'Marina Costa'],
     ['Instabilidade no Wi-Fi do escritório', 'Rede', 'Crítica', 1, 0, 'Ana Lima'],
@@ -36,6 +37,7 @@ function seedTickets() {
     ['Inclusão na lista de distribuição', 'Acesso', 'Baixa', 2, 5, 'Ana Lima'],
     ['Impressora do financeiro sem conexão', 'Equipamentos', 'Média', 2, 6, 'Leandro Melo'],
   ];
+  // map() percorre cada exemplo e devolve um novo objeto completo, incluindo número e datas.
   return examples.map(([title, category, priority, status, age, requester], index) => {
     const created = new Date();
     created.setDate(created.getDate() - age);
@@ -53,7 +55,9 @@ function seedTickets() {
 // Se não houver dados válidos, cria tickets de exemplo, convites vazios e identificador inicial.
 function loadWorkspace(storage) {
   try {
+    // ?? tenta uma chave antiga somente se a atual estiver ausente; JSON.parse converte texto JSON em objeto.
     const saved = JSON.parse(storage.getItem(storageKey) ?? storage.getItem("coredesk-v2-workspace"));
+    // Valida a estrutura mínima dos dados antes de reutilizá-los, evitando quebrar a interface.
     if (saved && Array.isArray(saved.tickets) && Array.isArray(saved.invites) && Number.isInteger(saved.nextId)) {
       migrateAccountEmails(saved.invites);
       for (const ticket of saved.tickets) {
@@ -66,6 +70,7 @@ function loadWorkspace(storage) {
   } catch {
     // A demonstração também funciona em memória com o armazenamento indisponível.
   }
+  // Estado inicial: o número 1049 é o próximo ID após os 12 chamados fictícios.
   return { tickets: seedTickets(), invites: [], nextId: 1049, theme: 'light' };
 }
 
@@ -112,6 +117,8 @@ function ticketsFor(workspace, role) {
 function filterTickets(tickets, { query = '', status = '', priority = '', category = '' } = {}) {
   const normalize = value => value.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLocaleLowerCase('pt-BR');
   const term = normalize(query.trim());
+  // && significa E: cada chamado deve passar por todos os filtros preenchidos.
+  // !status permite ignorar o filtro quando o usuário não escolheu nenhum status.
   return tickets.filter(ticket => (
     (!status || ticket.status === status) &&
     (!priority || ticket.priority === priority) &&
@@ -128,6 +135,7 @@ function ticketActivity(tickets, days, now = new Date()) {
     start.setDate(start.getDate() - days + 1 + index);
     const end = new Date(start);
     end.setDate(end.getDate() + 1);
+    // .length conta os registros que têm data dentro do intervalo do dia analisado.
     const count = field => tickets.filter(ticket => ticket[field] >= +start && ticket[field] < +end).length;
     return { date: start, opened: count('created'), resolved: count('resolved') };
   });
@@ -142,10 +150,12 @@ function inviteLinkToken(invite) {
   return invite.linkToken ?? invite.token;
 }
 
+// Gera um identificador aleatório para o convite usando a API de criptografia do navegador.
 function randomHex() {
   return toHex(crypto.getRandomValues(new Uint8Array(16)));
 }
 
+// Transforma bytes em caracteres hexadecimais, úteis para representar token e hash.
 function toHex(bytes) {
   return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
 }

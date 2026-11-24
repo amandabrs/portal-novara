@@ -256,7 +256,7 @@ function team() {
     return `<li>${avatar(invite.name)}<div class="member-details"><strong>${esc(invite.name)}</strong><small>${esc(invite.email)}</small></div>
       <div class="invite-actions">${actions}</div></li>`;
   }).join('');
-  return `${pageTitle('Equipe', 'Perfis e convites de demonstração.', action)}
+  return `${pageTitle('Equipe', 'Gerencie os convites e consulte os integrantes da equipe.', action)}
     <section class="panel">
       ${panelHeading('Pessoas', 'Participantes deste espaço de trabalho')}
       <ul class="member-list">${people}</ul>
@@ -269,7 +269,7 @@ function team() {
 
 function profile() {
   const person = user();
-  return `${pageTitle('Meu perfil', 'Edite os dados deste perfil de demonstração.')}
+  return `${pageTitle('Meu perfil', 'Edite sua foto e seus dados de contato.')}
     <form id="profile-form" class="panel settings-panel profile-form">
       <div class="profile-preview">${avatar(person.name, person.photo)}<div><strong>${esc(person.name)}</strong><p>${esc(person.role)}</p></div></div>
       <label>Nome de exibição<input name="name" value="${esc(person.name)}" required minlength="2" maxlength="80" autocomplete="name"></label>
@@ -521,13 +521,14 @@ function newInvitation() {
   showDialog('Convidar colaborador', `
     <p>O convite vale por 24 horas no navegador onde foi criado.</p>
     <label>Nome<input name="name" required minlength="2" maxlength="80" autofocus></label>
-    <label>E-mail fictício<input name="email" type="email" maxlength="120" required></label>`, {
+    <label>E-mail corporativo<input name="email" type="email" maxlength="120" required></label>`, {
     submitLabel: 'Criar convite',
     onSubmit(data) {
       if (account()?.id !== 'admin') return;
       const name = data.get('name').trim();
       const email = data.get('email').trim().toLowerCase();
       if (name.length < 2) return 'Preencha o nome com pelo menos 2 caracteres.';
+      if (!isCompanyEmail(email)) return 'Use um e-mail com o domínio @novarati.com.';
       if (basePeople.some(person => person.email === email) ||
           workspace.invites.some(invite => invite.email === email)) {
         return 'Já existe um cadastro ou convite para esse e-mail. Confira a lista de convites.';
@@ -564,7 +565,7 @@ async function copyInvitation(token) {
   const currentUrl = location.href;
   try {
     await navigator.clipboard.writeText(url.href);
-    notify('Link copiado. Abra no mesmo navegador para demonstrar o primeiro acesso.');
+    notify('Link copiado. Abra no mesmo navegador para concluir o primeiro acesso.');
   } catch {
     if (location.href !== currentUrl) return;
     showDialog('Copiar convite', `<label>Link do convite<input id="manual-invite" readonly value="${esc(url.href)}"></label>
@@ -577,12 +578,13 @@ async function copyInvitation(token) {
 async function logIn(data, form) {
   const email = data.get('email').trim().toLowerCase();
   const password = data.get('password');
+  if (!isCompanyEmail(email)) return 'Use um e-mail com o domínio @novarati.com.';
   const preset = basePeople.find(person => person.email === email);
   const invite = workspace.invites.find(item => item.email === email && item.accepted && item.credential);
   const valid = preset ? password === demoPassword : invite &&
     await passwordDigest(password, invite.credential.salt) === invite.credential.digest;
   if (!form.isConnected) return;
-  if (!valid) return 'E-mail ou senha fictícia incorretos.';
+  if (!valid) return 'E-mail ou senha incorretos.';
   setSession(preset?.id ?? invite.token);
   loginEmail = '';
   goTo(afterLogin);
@@ -596,7 +598,7 @@ async function activateAccount(data, form) {
   const name = data.get('name').trim();
   const password = data.get('password');
   if (name.length < 2 || name.length > 80) return 'Use de 2 a 80 caracteres no nome.';
-  if (password.length < 8 || password.length > 80) return 'Use de 8 a 80 caracteres na senha fictícia.';
+  if (password.length < 8 || password.length > 80) return 'Use de 8 a 80 caracteres na senha.';
   if (password !== data.get('confirmation')) return 'As senhas digitadas são diferentes.';
   const salt = randomHex();
   const digest = await passwordDigest(password, salt);
@@ -626,7 +628,7 @@ async function activateAccount(data, form) {
   history.replaceState(null, '', '#entrar');
   route();
   $('#login-form [name=password]').focus();
-  notify('Cadastro concluído. Entre com a senha fictícia que você criou.');
+  notify('Cadastro concluído. Entre com a senha que você criou.');
 }
 
 function showPublic(markup, title) {
@@ -700,7 +702,7 @@ publicMain.addEventListener('submit', async event => {
     result.textContent = '';
     if (data.get('name').trim() && data.get('message').trim().length >= 10) {
       form.reset();
-      result.textContent = 'Mensagem validada. Nenhum e-mail foi enviado.';
+      result.textContent = 'Mensagem validada. Para enviar, use o e-mail de contato no rodapé.';
     } else {
       error.textContent = 'Preencha o nome e uma mensagem com pelo menos 10 caracteres.';
     }

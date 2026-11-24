@@ -8,12 +8,14 @@ const statuses = [
 const priorities = ['Baixa', 'Média', 'Alta', 'Crítica'];
 const categories = ['Acesso', 'Equipamentos', 'Rede', 'Sistemas', 'Outros'];
 const basePeople = [
-  { id: 'tecnico', name: 'Amanda Barros', email: 'tecnico@novarati.example', role: 'Técnica de TI' },
-  { id: 'colaborador', name: 'Marina Costa', email: 'marina@novarati.example', role: 'Colaboradora' },
-  { id: 'admin', name: 'Rafael Lima', email: 'admin@novarati.example', role: 'Administrador' },
+  { id: 'tecnico', name: 'Amanda Barros', email: 'tecnico@novarati.com', role: 'Técnica de TI' },
+  { id: 'colaborador', name: 'Marina Costa', email: 'marina@novarati.com', role: 'Colaboradora' },
+  { id: 'admin', name: 'Rafael Lima', email: 'admin@novarati.com', role: 'Administrador' },
 ];
 const storageKey = 'portal-novara-workspace';
 const dayMs = 24 * 60 * 60 * 1000;
+const companyDomain = 'novarati.com';
+const seedDescription = 'Solicitação registrada na central de atendimento de TI.';
 const demoPassword = 'NovaraDemo123';
 
 function seedTickets() {
@@ -38,7 +40,7 @@ function seedTickets() {
     return {
       id: 1048 - index, title, category, priority, status: statuses[status].name,
       requester, owner: requester === 'Marina Costa' ? 'colaborador' : '',
-      description: 'Chamado de demonstração para acompanhar o atendimento de TI.',
+      description: seedDescription,
       created: created.getTime(), resolved,
     };
   });
@@ -48,12 +50,41 @@ function loadWorkspace(storage) {
   try {
     const saved = JSON.parse(storage.getItem(storageKey) ?? storage.getItem("coredesk-v2-workspace"));
     if (saved && Array.isArray(saved.tickets) && Array.isArray(saved.invites) && Number.isInteger(saved.nextId)) {
+      migrateAccountEmails(saved.invites);
+      for (const ticket of saved.tickets) {
+        if (ticket.description === 'Chamado de demonstração para acompanhar o atendimento de TI.') {
+          ticket.description = seedDescription;
+        }
+      }
       return saved;
     }
   } catch {
     // A demonstração também funciona em memória com o armazenamento indisponível.
   }
   return { tickets: seedTickets(), invites: [], nextId: 1049, theme: 'light' };
+}
+
+function isCompanyEmail(email) {
+  const [local, domain, extra] = email.split('@');
+  return Boolean(local && !/\s/.test(local) && domain === companyDomain && extra === undefined);
+}
+
+function migrateAccountEmails(invites) {
+  const reserved = new Set([
+    ...basePeople.map(person => person.email),
+    ...invites.map(invite => invite.email).filter(isCompanyEmail),
+  ]);
+  for (const invite of invites) {
+    if (isCompanyEmail(invite.email)) continue;
+    const local = invite.email.split('@')[0].slice(0, 60);
+    let email = local + '@' + companyDomain;
+    let suffix = 2;
+    while (reserved.has(email)) {
+      email = local + '-' + suffix++ + '@' + companyDomain;
+    }
+    invite.email = email;
+    reserved.add(email);
+  }
 }
 
 function peopleFor(workspace) {

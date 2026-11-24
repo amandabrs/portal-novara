@@ -18,15 +18,17 @@ Abra **Entrar** e use um dos perfis fictícios abaixo. Os três usam a senha fic
 
 | Perfil | E-mail |
 |---|---|
-| Administrador | `admin@novarati.example` |
-| Técnica de TI | `tecnico@novarati.example` |
-| Colaboradora | `marina@novarati.example` |
+| Administrador | `admin@novarati.com` |
+| Técnica de TI | `tecnico@novarati.com` |
+| Colaboradora | `marina@novarati.com` |
 
-1. No perfil **Administrador**, acesse **Equipe → Convidar**. Informe um nome e e-mail fictícios e selecione **Criar convite**.
+1. No perfil **Administrador**, acesse **Equipe → Convidar**. Informe um nome e um endereço de teste no domínio `@novarati.com` e selecione **Criar convite**.
 2. Use **Abrir convite** ou copie o link e abra no mesmo navegador. Preencha o nome, o telefone e ramal opcionais e uma senha fictícia. Confirme a senha e conclua o cadastro.
 3. Use o e-mail do convite e a senha criada na tela de **Entrar**. Registre um chamado como colaborador. Depois clique em **Sair da conta** e entre como técnica para responder e atualizar o status.
 4. Retorne ao perfil do colaborador pelo login e abra o chamado para ver a resposta. Em **Meu perfil**, teste a edição de dados e foto. Em **Acessibilidade**, alterne o tema e ajuste o tamanho do texto.
 5. Na **Apresentação**, use os botões do carrossel e teste a validação do formulário de **Contato**.
+
+Endereços de login de cadastros antigos são ajustados para `@novarati.com`. Consulte a área **Equipe** para ver o novo endereço. A senha e os dados do perfil continuam vinculados à mesma conta.
 
 O convite pode ser usado uma vez e vale 24 horas no navegador em que foi criado. Escolha **Gerar novo link** para convites vencidos ou perfis da versão anterior que ainda precisam criar a senha. O portal simula os papéis de acesso. Use apenas dados e senhas fictícios. A aplicação não envia e-mails, não possui autenticação de produção e não sincroniza dados entre dispositivos.
 

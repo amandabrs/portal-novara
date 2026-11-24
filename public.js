@@ -35,7 +35,7 @@ function presentationPage(signedIn) {
       </div>
     </section>
     <section id="contato" class="panel contact-section" aria-labelledby="contact-title" tabindex="-1">
-      <div><h2 id="contact-title">Contato</h2><p>Use dados fictícios para testar o formulário. O ambiente acadêmico valida os campos sem enviar mensagens.</p></div>
+      <div><h2 id="contact-title">Contato</h2><p>Para falar com Amanda Barros, use o e-mail no rodapé. Confira os dados da sua mensagem no formulário.</p></div>
       <form id="contact-form" class="public-form">
         <div class="form-grid">
           <label>Nome<input name="name" autocomplete="name" required maxlength="80"></label>
@@ -62,18 +62,12 @@ function loginPage(email) {
     <section class="access-layout">
       <div class="access-intro">
         <h1>Entrar no Portal Novara</h1>
-        <p>Use uma conta de demonstração ou a conta que você ativou por convite neste navegador.</p>
-        <details class="panel demo-credentials">
-          <summary>Ver credenciais de demonstração</summary>
-          <ul>${basePeople.map(person => `<li><strong>${esc(person.role)}</strong><span>${esc(person.email)}</span></li>`).join('')}</ul>
-          <p>Senha fictícia das três contas <code>${demoPassword}</code></p>
-        </details>
+        <p>Acesse a central de chamados com seu e-mail @novarati.com e sua senha.</p>
       </div>
       <form id="login-form" class="panel public-form access-form">
         <h2>Acesso à conta</h2>
         <label>E-mail<input name="email" type="email" value="${esc(email)}" autocomplete="username" required maxlength="120"></label>
-        <label>Senha fictícia<input name="password" type="password" autocomplete="current-password" required maxlength="80"></label>
-        <p>Ambiente demonstrativo. Use apenas dados fictícios.</p>
+        <label>Senha<input name="password" type="password" autocomplete="current-password" required maxlength="80"></label>
         <p class="form-error" role="alert"></p>
         <button class="button primary" type="submit">Entrar</button>
       </form>
@@ -84,14 +78,14 @@ function activationPage(invite) {
   if (!invite) return `
     <section class="panel access-form">
       <h1>Convite indisponível</h1>
-      <p>O convite venceu, já foi usado ou foi criado em outro navegador. Peça um novo link ao administrador da demonstração.</p>
+      <p>O convite venceu, já foi usado ou foi criado em outro navegador. Peça um novo link ao administrador.</p>
       <a class="button primary" href="#entrar">Ir para o login</a>
     </section>`;
   return `
     <section class="access-layout">
       <div class="access-intro">
         <h1>Complete seu cadastro</h1>
-        <p>O e-mail do convite será usado no login da demonstração. Depois de concluir o cadastro, você poderá entrar com a senha fictícia que criar aqui.</p>
+        <p>Complete seus dados e defina a senha para entrar com o e-mail do convite.</p>
       </div>
       <form id="activation-form" class="panel public-form access-form">
         <h2>Primeiro acesso</h2>
@@ -101,7 +95,7 @@ function activationPage(invite) {
           <label>Telefone (opcional)<input name="phone" type="tel" maxlength="24" autocomplete="tel"></label>
           <label>Ramal (opcional)<input name="extension" maxlength="8"></label>
         </div>
-        <label>Crie uma senha fictícia<input name="password" type="password" minlength="8" maxlength="80" autocomplete="new-password" aria-describedby="password-hint" required></label>
+        <label>Crie uma senha<input name="password" type="password" minlength="8" maxlength="80" autocomplete="new-password" aria-describedby="password-hint" required></label>
         <p id="password-hint">Use de 8 a 80 caracteres. Evite senhas que você usa em outras contas.</p>
         <label>Confirme a senha<input name="confirmation" type="password" maxlength="80" autocomplete="new-password" required></label>
         <p class="form-error" role="alert"></p>

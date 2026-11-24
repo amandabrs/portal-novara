@@ -1,9 +1,11 @@
 'use strict';
 
+// DOM: $() seleciona o primeiro elemento HTML que corresponde ao seletor.
 const $ = selector => document.querySelector(selector);
 const main = $('#main');
 const dialog = $('#dialog');
 const publicMain = $('#public-main');
+// Sessão demonstrativa: identifica o perfil ativo nesta aba via sessionStorage.
 const sessionKey = 'portal-novara-demo-session';
 const views = {
   dashboard: { hash: '#inicio', title: 'Visão geral' },
@@ -18,6 +20,7 @@ const shortDate = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'sho
 const replyDate = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 const weekday = new Intl.DateTimeFormat('pt-BR', { weekday: 'short' });
 const longDate = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'full' });
+// Estado principal: reúne chamados, convites e preferências; recupera dados locais ou exemplos.
 let workspace = loadWorkspace(localStorage);
 let view = 'dashboard';
 let period = 7;
@@ -26,6 +29,7 @@ let currentPersonId = readSession();
 let loginEmail = '';
 let afterLogin = 'dashboard';
 
+// Segurança de exibição: converte caracteres especiais antes de mostrar textos em HTML.
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 })[char]);
@@ -35,6 +39,7 @@ const avatar = (name, photo) => `<span class="avatar" aria-hidden="true">${photo
 const displayPerson = person => ({ ...person, ...workspace.personalProfiles?.[person.id] });
 const account = () => peopleFor(workspace).find(person => person.id === currentPersonId);
 const user = () => displayPerson(account());
+// Visibilidade: técnico/admin consultam todos; colaborador vê seus chamados (simulação local).
 const visibleTickets = () => ticketsFor(workspace, user().id).slice().sort((a, b) => b.id - a.id);
 const canManage = () => ['tecnico', 'admin'].includes(user().id);
 const options = (entries, value = '') => entries.map(entry =>
@@ -43,6 +48,7 @@ const countBy = (tickets, key, value) => tickets.filter(ticket => ticket[key] ==
 const pageTitle = (title, description, action = '') => `<div class="page-title"><div><h1>${title}</h1><p>${description}</p></div>${action}</div>`;
 const newButton = () => `<button class="button primary" type="button" data-action="new">${icon('add')}Novo chamado</button>`;
 
+// Feedback: exibe uma mensagem temporária na área de status acessível.
 function notify(message) {
   const toast = $('#toast');
   toast.textContent = message;
@@ -51,6 +57,7 @@ function notify(message) {
   toastTimeout = setTimeout(() => { toast.hidden = true; }, 4800);
 }
 
+// Recupera o perfil ativo no sessionStorage, quando disponível.
 function readSession() {
   try { return sessionStorage.getItem(sessionKey); } catch { return null; }
 }
@@ -71,6 +78,7 @@ function endSession() {
   main.replaceChildren();
 }
 
+// Armazenamento: JSON.stringify converte workspace para texto; localStorage.setItem salva.
 function save() {
   try {
     localStorage.setItem(storageKey, JSON.stringify(workspace));
@@ -80,6 +88,7 @@ function save() {
   }
 }
 
+// Depois da ação: tenta salvar, fecha o diálogo, atualiza a tela e avisa o usuário.
 function finishChange(message) {
   const persisted = save();
   if (dialog.open) dialog.close();
@@ -87,6 +96,7 @@ function finishChange(message) {
   notify(persisted ? message : `${message} O navegador manteve os dados só nesta aba.`);
 }
 
+// Indicadores: conta chamados por status a partir dos dados atuais, sem totais fixos.
 function statsFor(tickets) {
   return [
     { title: 'Total de chamados', value: tickets.length, icon: 'confirmation_number', description: 'Todos os chamados visíveis' },
@@ -114,6 +124,7 @@ function panelHeading(title, caption, control = '') {
   return `<div class="panel-heading"><div><h2>${title}</h2><p>${caption}</p></div>${control}</div>`;
 }
 
+// Gráfico de atividade: calcula aberturas e resoluções por dia.
 function activity(tickets) {
   const days = ticketActivity(tickets, period);
   const max = Math.max(4, Math.ceil(Math.max(...days.flatMap(day => [day.opened, day.resolved])) / 4) * 4);
@@ -144,6 +155,7 @@ function activity(tickets) {
   </section>`;
 }
 
+// Gráfico de rosca: distribui os chamados por status e calcula percentuais.
 function distribution(tickets) {
   const entries = statuses.map(status => ({ ...status, value: countBy(tickets, 'status', status.name) }));
   let end = 0;
@@ -169,6 +181,7 @@ function pill(label, className) {
   return `<span class="pill ${className}">${esc(label)}</span>`;
 }
 
+// Tabela: transforma os objetos do array em linhas de HTML.
 function ticketTable(tickets) {
   if (!tickets.length) return '<p class="empty">Nenhum chamado encontrado.</p>';
   return `<div class="table-wrap" tabindex="0" role="region" aria-label="Lista de chamados"><table>
@@ -220,11 +233,13 @@ function ticketPage() {
   </section>`;
 }
 
+// Busca: utiliza filterTickets() de data.js para aplicar os filtros combinados.
 function renderTicketResults() {
   const result = filterTickets(visibleTickets(), filters);
   $('#ticket-results').innerHTML = `<p class="result-count" role="status">${result.length} ${result.length === 1 ? 'chamado encontrado' : 'chamados encontrados'}</p>${ticketTable(result)}`;
 }
 
+// Relatórios: calcula os valores exibidos a partir dos chamados visíveis.
 function reports(tickets) {
   function breakdown(title, key, labels) {
     const counts = labels.map(label => [label, countBy(tickets, key, label)]);
@@ -286,6 +301,7 @@ function profile() {
     </form>`;
 }
 
+// Perfil: valida campos e foto; salva as alterações locais do usuário.
 async function saveProfile(event) {
   event.preventDefault();
   const form = event.target;
@@ -352,6 +368,7 @@ function settings() {
   </section>`;
 }
 
+// Renderização: monta novamente a página conforme a seção e o perfil selecionados.
 function render() {
   if (!account()) return;
   const person = user();
@@ -392,6 +409,7 @@ function goTo(next) {
   window.scrollTo(0, 0);
 }
 
+// Acessibilidade: alterna as variáveis do tema no CSS e grava a escolha.
 function setTheme(theme) {
   workspace.theme = theme;
   const persisted = save();
@@ -428,6 +446,7 @@ function showDialog(title, body, { submitLabel, onSubmit } = {}) {
   dialog.showModal();
 }
 
+// Cadastro: valida o formulário, cria o chamado com ID e o adiciona ao workspace.
 function newTicket() {
   showDialog('Novo chamado', `
     <label>Título<input name="title" maxlength="100" minlength="3" required autofocus></label>
@@ -456,6 +475,7 @@ function newTicket() {
   });
 }
 
+// Detalhes: mostra o chamado e disponibiliza resposta/alteração ao perfil técnico.
 function openTicket(id) {
   const ticket = visibleTickets().find(item => item.id === id);
   if (!ticket) return;
@@ -516,6 +536,7 @@ function saveInvites(invites) {
   return false;
 }
 
+// Convite: gera link demonstrativo com token e vencimento de 24 horas no mesmo navegador.
 function newInvitation() {
   if (account()?.id !== 'admin') return;
   showDialog('Convidar colaborador', `
@@ -575,6 +596,7 @@ async function copyInvitation(token) {
   }
 }
 
+// Login fictício: compara credenciais locais; não existe autenticação em servidor.
 async function logIn(data, form) {
   const email = data.get('email').trim().toLowerCase();
   const password = data.get('password');
@@ -592,6 +614,7 @@ async function logIn(data, form) {
   notify('Você entrou no Portal Novara.');
 }
 
+// Ativação: confere convite, deriva senha com Web Crypto e registra conta localmente.
 async function activateAccount(data, form) {
   const hash = location.hash;
   const token = hash.slice('#convite='.length);
@@ -643,6 +666,7 @@ function showPublic(markup, title) {
   publicMain.focus({ preventScroll: true });
 }
 
+// Navegação: usa o fragmento # da URL para decidir qual seção mostrar.
 function route() {
   const hash = location.hash;
   const next = Object.keys(views).find(key => views[key].hash === hash);
@@ -781,6 +805,7 @@ $('#sidebar-scrim').addEventListener('click', () => setMenu(false));
 window.matchMedia('(max-width: 900px)').addEventListener('change', event => {
   if (!event.matches) setMenu(false, false);
 });
+// Pesquisa global: encaminha o usuário à busca de chamados.
 function search() {
   if (view !== 'tickets') goTo('tickets');
   $('#ticket-search').focus();

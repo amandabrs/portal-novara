@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="pt-BR">
+<!-- Configurações do documento: idioma, adaptação a celulares, estilos e scripts. -->
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,12 +8,16 @@
   <meta name="theme-color" content="#18172b">
   <title>Visão geral · Portal Novara</title>
   <link rel="stylesheet" href="styles.css?v=2.4">
+  <!-- data.js define dados e regras; public.js monta a apresentação/login; app.js controla o painel e as ações. -->
+  <!-- defer executa os scripts após o HTML ser interpretado, respeitando esta ordem. -->
   <script src="data.js?v=2.4" defer></script>
   <script src="public.js?v=2.4" defer></script>
   <script src="app.js?v=2.4.1" defer></script>
 </head>
 <body>
+  <!-- Acessibilidade: permite pular o menu usando o teclado e chegar ao conteúdo principal. -->
   <a class="skip" id="skip-link" href="#public-main">Pular para o conteúdo</a>
+  <!-- Área pública (apresentação, contato e login): o public.js insere seu conteúdo em public-main. -->
   <div id="public-shell">
     <header class="public-header">
       <a class="brand" href="#apresentacao">
@@ -27,7 +32,9 @@
     </header>
     <main class="public-main" id="public-main" tabindex="-1"></main>
   </div>
+  <!-- Área interna: começa oculta. O app.js controla o acesso demonstrativo e monta cada tela em #main. -->
   <div class="app-shell" id="app-shell" hidden>
+    <!-- Menu lateral: os links com data-nav identificam a seção que deve aparecer. -->
     <aside class="sidebar" id="sidebar" aria-label="Menu principal">
       <a class="brand" href="#inicio" data-nav="dashboard">
         <span class="brand-mark"><span class="icon" aria-hidden="true">workspaces</span></span>
@@ -62,6 +69,7 @@
           <button class="icon-button" data-action="theme" type="button" aria-label="Alternar tema"><span class="icon" aria-hidden="true">contrast</span></button>
         </div>
       </header>
+      <!-- Contêiner central: dashboard, chamados e relatórios são gerados dinamicamente pelo JavaScript. -->
       <main id="main" tabindex="-1"></main>
     </div>
   </div>
@@ -75,7 +83,9 @@
       <a href="https://github.com/amandabrs/portal-novara">Código no GitHub</a>
     </nav>
   </footer>
+  <!-- Dialog nativo: janelas de cadastro, detalhes de chamados e ações de confirmação. -->
   <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
+  <!-- aria-live anuncia mensagens de sucesso/erro também para tecnologias assistivas. -->
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </body>
 </html>
